@@ -1,14 +1,16 @@
 'use client';
 
-import { useEffect, useState } from "react";
+import { FormEvent, useEffect, useState } from "react";
 
-export default function Home() {
+export default function AddScore() {
   const [msg, setMsg] = useState('');
   const [errorCnt, setErrorCnt] = useState(0);
   const [input, setInput] = useState('');
   const [displayScore, setDisplayScore] = useState(false);
   const [score, setScore] = useState(0);
+  const [addScore, setAddScore] = useState('');
   const [shake, setShake] = useState(false);
+  const [PSK, setPSK] = useState('');
 
   useEffect(() => {
     if (input.length === 5) {
@@ -45,7 +47,7 @@ export default function Home() {
         if (input.length > 0 && !displayScore) {
           setInput(input.slice(0, -1));
         }
-      } else if (e.key === 'Enter' || e.key === 'Escape' || e.key == ' ') {
+      } else if (e.key === 'Escape') {
         if (displayScore) {
           setInput('');
         }
@@ -56,6 +58,9 @@ export default function Home() {
       window.removeEventListener('keydown', listener);
     };
   }, [input, displayScore]);
+  useEffect(() => {
+    setPSK(prompt("보안코드 입력") || '');
+  }, []);
 
   return (
     <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center h-dvh p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
@@ -102,14 +107,49 @@ export default function Home() {
           </div>
         </div>
         <div className={`bg-black opacity-80 fixed top-0 left-0 w-full h-full z-10 ${!displayScore && 'hidden'}`}></div>
-        <div className={`bg-[rgb(239,239,240)] dark:bg-[rgb(32,32,32)] fixed top-1/2 left-1/2 -translate-1/2 rounded-lg min-w-42 z-20 text-center ${!displayScore && 'hidden'}`}>
-          <div className="p-6">
-            <h1 className="text-black dark:text-white font-bold text-lg mb-2">현재 점수</h1>
-            <p>{score}</p>
+        <form onSubmit={(e: FormEvent) => {
+          e.preventDefault();
+          fetch(`/api/score/${input}`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': PSK
+            },
+            body: JSON.stringify({ score: Number(addScore) })
+          }).then(r => r.json()).then(d => {
+            setInput('');
+            if (d.error) {
+              setAddScore('');
+              setDisplayScore(false);
+              setErrorCnt(d => d + 1);
+              setMsg(d.error);
+              setShake(true);
+              setTimeout(() => {
+                setShake(false);
+              }, 1000);
+              setTimeout(() => {
+                setErrorCnt(d => d - 1);
+              }, 3000);
+            } else {
+              setDisplayScore(false);
+              setAddScore('');
+            }
+            return false;
+          });
+        }}>
+          <div className={`bg-[rgb(239,239,240)] dark:bg-[rgb(32,32,32)] fixed top-1/2 left-1/2 -translate-1/2 rounded-lg min-w-42 z-20 text-center ${!displayScore && 'hidden'}`}>
+            <div className="p-6">
+              <h1 className="text-black dark:text-white font-bold text-lg mb-2">점수 추가</h1>
+              <p>현재 점수: {score}</p>
+              <input type="number" name="addscore" className="w-full p-2 mt-4 h-8 rounded-md border border-black dark:border-white bg-[rgb(239,239,240)] dark:bg-[rgb(32,32,32)] text-black dark:text-white [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none" placeholder="추가할 점수" value={addScore} onChange={(e) => setAddScore(e.currentTarget.value)} />
+            </div>
+            <div className="h-[0.3px] w-full bg-black dark:bg-white"></div>
+            <div className="grid grid-flow-dense">
+              <button type="submit" className="w-full h-10 font-bold text-[rgb(71,127,255)] col-[2]">승인</button>
+              <button type="button" className="w-full h-10 text-[rgb(71,127,255)] border-r-[0.1px] border-black dark:border-white col-[1]" onClick={() => { setInput(''); setAddScore(''); }}>취소</button>
+            </div>
           </div>
-          <div className="h-[0.3px] w-full bg-black dark:bg-white"></div>
-          <button className="w-full h-10 font-bold text-[rgb(71,127,255)]" onClick={() => { setInput(''); }}>승인</button>
-        </div>
+        </form>
       </main>
     </div>
   );
