@@ -1,5 +1,3 @@
-import type WebSocket from 'ws';
-
 export enum SQSocketEventType {
     CODE = 0,
     ATTACHED = 1,
@@ -8,7 +6,7 @@ export enum SQSocketEventType {
     PROBLEM = 4,
     TIMER_STOP = 5,
     TIMER_RESUME = 6,
-    FINISH = 7,
+    TIMESYNC = 7,
     DETACH = 8
 }
 
@@ -22,7 +20,7 @@ export enum SMSocketEventType {
     PROBLEM = 6,
     TIMER_STOP = 7,
     TIMER_RESUME = 8,
-    FINISH = 9,
+    TIMESYNC = 9,
     DETACH = 10
 }
 

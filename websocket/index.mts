@@ -73,13 +73,30 @@ wss.on('connection', (ws, req) => {
                     clients.get(code)?.send(JSON.stringify({ type: SQSocketEventType.PROBLEM, data: { problem: currentProblem.question } }));
                     break;
                 case SMSocketEventType.TIMER_STOP:
-                    ws.send(JSON.stringify({ type: SMSocketEventType.TIMER_STOP }));
-                    clients.get(code)?.send(JSON.stringify({ type: SQSocketEventType.TIMER_STOP }));
+                    if (state === SQState.ONGOING) {
+                        state = SQState.TIMER_STOPPED;
+                        ws.send(JSON.stringify({ type: SMSocketEventType.TIMER_STOP }));
+                        clients.get(code)?.send(JSON.stringify({ type: SQSocketEventType.TIMER_STOP }));
+                    }
                     break;
                 case SMSocketEventType.TIMER_RESUME:
-                    ws.send(JSON.stringify({ type: SMSocketEventType.TIMER_RESUME, data: { time: msg.data.time } }));
-                    clients.get(code)?.send(JSON.stringify({ type: SQSocketEventType.TIMER_RESUME, data: { time: msg.data.time } }));
+                    if (state === SQState.TIMER_STOPPED) {
+                        ws.send(JSON.stringify({ type: SMSocketEventType.TIMER_RESUME, data: { time: msg.data.time } }));
+                        clients.get(code)?.send(JSON.stringify({ type: SQSocketEventType.TIMER_RESUME, data: { time: msg.data.time } }));
+                    }
                     break;
+                case SMSocketEventType.TIMESYNC:
+                    (async () => {
+                        ws.send(JSON.stringify({ type: SMSocketEventType.TIMESYNC, data: { remaining: msg.data.remaining, timestamp: msg.data.timestamp } }));
+                    })();
+                    clients.get(code)?.send(JSON.stringify({ type: SQSocketEventType.TIMESYNC, data: { remaining: msg.data.remaining, timestamp: msg.data.timestamp } }));
+                    break;
+                case SMSocketEventType.END:
+                    if (state === SQState.ONGOING) {
+                        state = SQState.PENDING;
+                        ws.send(JSON.stringify({ type: SMSocketEventType.END, data: { score } }));
+                        clients.get(code)?.send(JSON.stringify({ type: SQSocketEventType.END, data: { score } }));
+                    }
             }
         })
     }

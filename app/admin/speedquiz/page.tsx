@@ -13,6 +13,7 @@ export default function SpeedQuiz() {
     const [problem, setProblem] = useState('');
     const [answer, setAnswer] = useState('');
     const [timeRemaining, setTimeRemaining] = useState(0);
+    const [timeTick, setTimeTick] = useState(false);
     const [timer, setTimer] = useState(false);
     const [socket, setSocket] = useState<WebSocket | null>(null);
     const [score, setScore] = useState(-1);
@@ -52,6 +53,7 @@ export default function SpeedQuiz() {
                     setProblem('');
                     setTimer(false);
                     setTimeRemaining(0);
+                    setScore(msg.data.score);
                     break;
                 case SMSocketEventType.PROBLEM:
                     setProblem(msg.data.problem);
@@ -64,11 +66,9 @@ export default function SpeedQuiz() {
                     setTimer(true);
                     setTimeRemaining(msg.data.time);
                     break;
-                case SMSocketEventType.FINISH:
-                    setTimer(false);
-                    setTimeRemaining(0);
-                    setOngoing(false);
-                    setScore(msg.data.score);
+                case SMSocketEventType.TIMESYNC:
+                    setTimeRemaining(msg.data.remaining - (Date.now() - msg.data.timestamp));
+                    setTimeTick(d => !d);
                     break;
                 case SMSocketEventType.DETACH:
                     setConnected(false);
@@ -79,16 +79,28 @@ export default function SpeedQuiz() {
                     break;
             }
         });
-    }, []);
+    }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
     useEffect(() => {
         if (timer) {
             const intv = setInterval(() => {
+                if (timeRemaining > 0 && timeRemaining <= 100) socket?.send(JSON.stringify({ type: SMSocketEventType.END }));
                 setTimeRemaining(d => d > 100 ? d - 100 : 0);
+                if (timeTick) {};
             }, 100);
             return () => clearInterval(intv);
         }
-    }, [timer, timeRemaining]);
+    }, [timer, timeRemaining, timeTick]);
+
+
+    useEffect(() => {
+        if (socket && connected && ongoing) {
+            const intv = setInterval(() => {
+                socket.send(JSON.stringify({ type: SMSocketEventType.TIMESYNC, data: { remaining: timeRemaining, timestamp: Date.now() } }));
+            }, 1000);
+            return () => clearInterval(intv);
+        }
+    }, [ongoing, timeRemaining, socket, connected]);
 
     return (
         <main className="h-dvh w-screen flex flex-col items-center justify-begin text-black dark:text-white">
