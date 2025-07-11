@@ -140,6 +140,7 @@ export default function AddScore() {
           <div className={`bg-[rgb(239,239,240)] dark:bg-[rgb(32,32,32)] fixed top-1/2 left-1/2 -translate-1/2 rounded-lg min-w-42 z-20 text-center ${!displayScore && 'hidden'}`}>
             <div className="p-6">
               <h1 className="text-black dark:text-white font-bold text-lg mb-2">점수 추가</h1>
+              <p>학번: {input}</p>
               <p>현재 점수: {score}</p>
               <input type="number" name="addscore" className="w-full p-2 mt-4 h-8 rounded-md border border-black dark:border-white bg-[rgb(239,239,240)] dark:bg-[rgb(32,32,32)] text-black dark:text-white [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none" placeholder="추가할 점수" value={addScore} onChange={(e) => setAddScore(e.currentTarget.value)} />
             </div>
