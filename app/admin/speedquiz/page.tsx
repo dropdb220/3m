@@ -13,7 +13,6 @@ export default function SpeedQuiz() {
     const [problem, setProblem] = useState('');
     const [answer, setAnswer] = useState('');
     const [timeRemaining, setTimeRemaining] = useState(0);
-    const [timeTick, setTimeTick] = useState(false);
     const [timer, setTimer] = useState(false);
     const [socket, setSocket] = useState<WebSocket | null>(null);
     const [score, setScore] = useState(-1);
@@ -67,8 +66,9 @@ export default function SpeedQuiz() {
                     setTimeRemaining(msg.data.time);
                     break;
                 case SMSocketEventType.TIMESYNC:
-                    setTimeRemaining(msg.data.remaining - (Date.now() - msg.data.timestamp));
-                    setTimeTick(d => !d);
+                    const remain = msg.data.remaining - (Date.now() - msg.data.timestamp);
+                    setTimeRemaining(remain);
+                    if (remain <= 0) socket?.send(JSON.stringify({ type: SMSocketEventType.END }));
                     break;
                 case SMSocketEventType.DETACH:
                     setConnected(false);
@@ -82,25 +82,15 @@ export default function SpeedQuiz() {
     }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
     useEffect(() => {
-        if (timer) {
-            const intv = setInterval(() => {
-                if (timeRemaining > 0 && timeRemaining <= 100) socket?.send(JSON.stringify({ type: SMSocketEventType.END }));
-                setTimeRemaining(d => d > 100 ? d - 100 : 0);
-                if (timeTick) {};
-            }, 100);
-            return () => clearInterval(intv);
-        }
-    }, [timer, timeRemaining, timeTick]);
-
-
-    useEffect(() => {
         if (socket && connected && ongoing) {
-            const intv = setInterval(() => {
-                socket.send(JSON.stringify({ type: SMSocketEventType.TIMESYNC, data: { remaining: timeRemaining, timestamp: Date.now() } }));
+            const tmpDate = Date.now();
+            const t = setTimeout(() => {
+                if (timeRemaining > 0 && timeRemaining <= 100) socket?.send(JSON.stringify({ type: SMSocketEventType.END }));
+                socket.send(JSON.stringify({ type: SMSocketEventType.TIMESYNC, data: { remaining: timeRemaining - (Date.now() - tmpDate), timestamp: Date.now() } }));
             }, 1000);
-            return () => clearInterval(intv);
+            return () => clearTimeout(t);
         }
-    }, [ongoing, timeRemaining, socket, connected]);
+    }, [ongoing, socket, connected, timeRemaining]);
 
     return (
         <main className="h-dvh w-screen flex flex-col items-center justify-begin text-black dark:text-white">
