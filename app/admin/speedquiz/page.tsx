@@ -82,15 +82,16 @@ export default function SpeedQuiz() {
     }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
     useEffect(() => {
-        if (socket && connected && ongoing) {
+        if (socket && connected && ongoing && timer) {
             const tmpDate = Date.now();
             const t = setTimeout(() => {
-                if (timeRemaining > 0 && timeRemaining <= 100) socket?.send(JSON.stringify({ type: SMSocketEventType.END }));
-                socket.send(JSON.stringify({ type: SMSocketEventType.TIMESYNC, data: { remaining: timeRemaining - (Date.now() - tmpDate), timestamp: Date.now() } }));
+                if (!(socket && connected && ongoing && timer)) return;
+                if (timeRemaining > 0 && timeRemaining <= 1000) socket?.send(JSON.stringify({ type: SMSocketEventType.END }));
+                else socket.send(JSON.stringify({ type: SMSocketEventType.TIMESYNC, data: { remaining: timeRemaining - (Date.now() - tmpDate), timestamp: Date.now() } }));
             }, 1000);
             return () => clearTimeout(t);
         }
-    }, [ongoing, socket, connected, timeRemaining]);
+    }, [ongoing, socket, connected, timeRemaining, timer]);
 
     return (
         <main className="h-dvh w-screen flex flex-col items-center justify-begin text-black dark:text-white">
