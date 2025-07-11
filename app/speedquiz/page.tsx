@@ -11,8 +11,6 @@ export default function SpeedQuiz() {
     const [ongoing, setOngoing] = useState(false);
     const [problem, setProblem] = useState('');
     const [timeRemaining, setTimeRemaining] = useState(0);
-    const [timeTick, setTimeTick] = useState(false);
-    const [timer, setTimer] = useState(false);
     const [score, setScore] = useState(-1);
 
     useEffect(() => {
@@ -31,13 +29,11 @@ export default function SpeedQuiz() {
                     break;
                 case SQSocketEventType.START:
                     setOngoing(true);
-                    setTimer(true);
                     setTimeRemaining(msg.data.time);
                     break;
                 case SQSocketEventType.END:
                     setOngoing(false);
                     setProblem('');
-                    setTimer(false);
                     setTimeRemaining(0);
                     setScore(msg.data.score);
                     break;
@@ -45,36 +41,22 @@ export default function SpeedQuiz() {
                     setProblem(msg.data.problem);
                     break;
                 case SQSocketEventType.TIMER_STOP:
-                    setTimer(false);
                     break;
                 case SQSocketEventType.TIMER_RESUME:
-                    setTimer(true);
                     setTimeRemaining(msg.data.time);
                     break;
                 case SQSocketEventType.TIMESYNC:
                     setTimeRemaining(msg.data.remaining - (Date.now() - msg.data.timestamp));
-                    setTimeTick(d => !d);
                     break;
                 case SQSocketEventType.DETACH:
                     setConnected(false);
                     setOngoing(false);
                     setProblem('');
                     setTimeRemaining(0);
-                    setTimer(false);
                     break;
             }
         });
     }, []);
-
-    useEffect(() => {
-        if (timer) {
-            const intv = setInterval(() => {
-                setTimeRemaining(d => d > 100 ? d - 100 : 0);
-                if (timeTick) {}
-            }, 100);
-            return () => clearInterval(intv);
-        }
-    }, [timer, timeRemaining, timeTick]);
 
     return (
         <main className="h-dvh w-screen flex flex-col items-center justify-begin text-black dark:text-white">
