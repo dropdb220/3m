@@ -57,8 +57,8 @@ wss.on('connection', (ws, req) => {
                         state = SQState.ONGOING;
                         score = 0;
                         problems = allProblems.slice(0);
-                        ws.send(JSON.stringify({ type: SMSocketEventType.START, data: { time: 40000 } }));
-                        clients.get(code)?.send(JSON.stringify({ type: SQSocketEventType.START, data: { time: 40000 } }));
+                        ws.send(JSON.stringify({ type: SMSocketEventType.START, data: { time: 39999 } }));
+                        clients.get(code)?.send(JSON.stringify({ type: SQSocketEventType.START, data: { time: 39999 } }));
                         currentProblem = problems[Math.floor(Math.random() * problems.length)];
                         problems.splice(problems.indexOf(currentProblem), 1);
                         ws.send(JSON.stringify({ type: SMSocketEventType.PROBLEM, data: { problem: currentProblem.question, answer: currentProblem.answer } }));
