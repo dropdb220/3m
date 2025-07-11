@@ -81,6 +81,7 @@ wss.on('connection', (ws, req) => {
                     break;
                 case SMSocketEventType.TIMER_RESUME:
                     if (state === SQState.TIMER_STOPPED) {
+                        state = SQState.ONGOING;
                         ws.send(JSON.stringify({ type: SMSocketEventType.TIMER_RESUME, data: { time: msg.data.time } }));
                         clients.get(code)?.send(JSON.stringify({ type: SQSocketEventType.TIMER_RESUME, data: { time: msg.data.time } }));
                     }
