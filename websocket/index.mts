@@ -23,6 +23,7 @@ wss.on('connection', (ws, req) => {
     let code = '';
     let state = SQState.PENDING;
     let score = 0;
+    let scores = [0, 0, 0];
     let problems = allProblems.slice(0);
     let currentProblem = { points: 0, question: '', answer: '' };
     if (req.url === '/speedquiz') {
@@ -97,6 +98,74 @@ wss.on('connection', (ws, req) => {
                         state = SQState.PENDING;
                         ws.send(JSON.stringify({ type: SMSocketEventType.END, data: { score } }));
                         clients.get(code)?.send(JSON.stringify({ type: SQSocketEventType.END, data: { score } }));
+                    }
+            }
+        })
+    } else if (req.url === '/speedquiz3/manager') {
+        ws.on('message', data => {
+            const msg = JSON.parse(data.toString());
+            switch (msg.type) {
+                case SMSocketEventType.IDENTIFY:
+                    if (msg.data.PSK !== process.env.PSK) {
+                        ws.send(JSON.stringify({ type: SMSocketEventType.UNAUTHORIZED, data: { PSKError: true } }));
+                        ws.close();
+                    } else {
+                        if (clients.has(msg.data.code1) && clients.has(msg.data.code2) && clients.has(msg.data.code3)) {
+                            code = `${msg.data.code1}-${msg.data.code2}-${msg.data.code3}`;
+                            ws.send(JSON.stringify({ type: SMSocketEventType.IDENTIFIED }));
+                            code.split('-').forEach(c => { clients.get(c)?.send(JSON.stringify({ type: SQSocketEventType.ATTACHED })); });
+                            identified = true;
+                        } else {
+                            ws.send(JSON.stringify({ type: SMSocketEventType.INVALID_CODE }));
+                        }
+                    }
+                    break;
+                case SMSocketEventType.START:
+                    if (!identified) ws.send(JSON.stringify({ type: SMSocketEventType.UNAUTHORIZED }));
+                    else if (state === SQState.PENDING) {
+                        state = SQState.ONGOING;
+                        scores = [0, 0, 0];
+                        problems = allProblems.slice(0);
+                        ws.send(JSON.stringify({ type: SMSocketEventType.START, data: { time: 39999 } }));
+                        code.split('-').forEach(c => { clients.get(c)?.send(JSON.stringify({ type: SQSocketEventType.START, data: { time: 39999 } })); });
+                        currentProblem = problems[Math.floor(Math.random() * problems.length)];
+                        problems.splice(problems.indexOf(currentProblem), 1);
+                        ws.send(JSON.stringify({ type: SMSocketEventType.PROBLEM, data: { problem: currentProblem.question, answer: currentProblem.answer } }));
+                        code.split('-').forEach(c => { clients.get(c)?.send(JSON.stringify({ type: SQSocketEventType.PROBLEM, data: { problem: currentProblem.question } })); });
+                    }
+                    break;
+                case SMSocketEventType.PROBLEM:
+                    if (msg.data.correct) scores[msg.data.player - 1] += currentProblem.points;
+                    currentProblem = problems[Math.floor(Math.random() * problems.length)];
+                    problems.splice(problems.indexOf(currentProblem), 1);
+                    ws.send(JSON.stringify({ type: SMSocketEventType.PROBLEM, data: { problem: currentProblem.question, answer: currentProblem.answer } }));
+                    code.split('-').forEach(c => { clients.get(c)?.send(JSON.stringify({ type: SQSocketEventType.PROBLEM, data: { problem: currentProblem.question } })); });
+                    break;
+                case SMSocketEventType.TIMER_STOP:
+                    if (state === SQState.ONGOING) {
+                        state = SQState.TIMER_STOPPED;
+                        ws.send(JSON.stringify({ type: SMSocketEventType.TIMER_STOP }));
+                        code.split('-').forEach(c => { clients.get(c)?.send(JSON.stringify({ type: SQSocketEventType.TIMER_STOP })); });
+                    }
+                    break;
+                case SMSocketEventType.TIMER_RESUME:
+                    if (state === SQState.TIMER_STOPPED) {
+                        state = SQState.ONGOING;
+                        ws.send(JSON.stringify({ type: SMSocketEventType.TIMER_RESUME, data: { time: msg.data.time } }));
+                        code.split('-').forEach(c => { clients.get(c)?.send(JSON.stringify({ type: SQSocketEventType.TIMER_RESUME, data: { time: msg.data.time } })); });
+                    }
+                    break;
+                case SMSocketEventType.TIMESYNC:
+                    (async () => {
+                        ws.send(JSON.stringify({ type: SMSocketEventType.TIMESYNC, data: { remaining: msg.data.remaining, timestamp: msg.data.timestamp } }));
+                    })();
+                    code.split('-').forEach(c => { clients.get(c)?.send(JSON.stringify({ type: SQSocketEventType.TIMESYNC, data: { remaining: msg.data.remaining, timestamp: msg.data.timestamp } })); });
+                    break;
+                case SMSocketEventType.END:
+                    if (state === SQState.ONGOING) {
+                        state = SQState.PENDING;
+                        ws.send(JSON.stringify({ type: SMSocketEventType.END, data: { scores } }));
+                        code.split('-').forEach((c, idx) => { clients.get(c)?.send(JSON.stringify({ type: SQSocketEventType.END, data: { score: scores[idx] } })); });
                     }
             }
         })
