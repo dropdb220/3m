@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useState, useEffect } from 'react';
 import { SMSocketEventType } from '@/types';
 
-export default function SpeedQuiz() {
+export default function SpeedQuiz3() {
     const [PSK, setPSK] = useState('');
     const [wsConnected, setWsConnected] = useState(false);
     const [connected, setConnected] = useState(false);
