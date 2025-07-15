@@ -1,7 +1,8 @@
 import WebSocket, { WebSocketServer } from 'ws';
-import { SQSocketEventType, SMSocketEventType, SQState } from '../types.js';
+import { SQSocketEventType, SMSocketEventType, SQState, MCSocketEventType } from '../types.js';
 import dotenv from "dotenv";
 import fs from 'node:fs/promises';
+import http from 'node:http';
 
 const allProblems: Array<{ points: number, question: string, answer: string }> = (await fs.readFile(new URL('../../data/problems.csv', import.meta.url), 'utf8')).split('\n').map(p => {
     return {
@@ -16,6 +17,7 @@ const NODE_ENV = process.env.NODE_ENV || "development";
 dotenv.config({ path: [`.env.${NODE_ENV}.local`, `.env.${NODE_ENV}`, '.env'] });
 
 const clients = new Map<string, WebSocket>();
+const merchants: Array<{ code: string, socket: WebSocket }> = [];
 
 const wss = new WebSocketServer({ port: Number(process.env.NEXT_PUBLIC_WS_PORT) || 4000 });
 wss.on('connection', (ws, req) => {
@@ -169,5 +171,50 @@ wss.on('connection', (ws, req) => {
                     }
             }
         })
+    } else if (req.url === '/merchant') {
+        ws.on('message', data => {
+            const msg = JSON.parse(data.toString());
+            switch (msg.type) {
+                case MCSocketEventType.IDENTIFY:
+                    if (msg.data.PSK !== process.env.PSK) {
+                        ws.send(JSON.stringify({ type: MCSocketEventType.UNAUTHORIZED, data: { PSKError: true } }));
+                        ws.close();
+                    } else if (!msg.data.code || msg.data.code.length < 1) {
+                        ws.send(JSON.stringify({ type: MCSocketEventType.INVALID_CODE }));
+                        ws.close();
+                    } else {
+                        merchants.push({ code: msg.data.code, socket: ws });
+                        ws.send(JSON.stringify({ type: MCSocketEventType.IDENTIFIED }));
+                    }
+                    break;
+            }
+        })
     }
+});
+
+const server = http.createServer((req, res) => {
+    const psk = req.headers['authorization'];
+    if (psk !== process.env.PSK) {
+        res.writeHead(403, { 'Content-Type': 'application/json; charset=UTF-8' });
+        res.end(JSON.stringify({ error: '인증 실패' }));
+        return;
+    }
+    if (req.url!.startsWith('/purchase')) {
+        const data = new URLSearchParams(req.url!.split('?')[1]);
+        const stuNum = data.get('stuNum');
+        const name = data.get('name');
+        const count = Number(data.get('count'));
+        const merchantCode = data.get('merchant');
+        merchants.filter(m => m.code === merchantCode).forEach(m => {
+            m.socket.send(JSON.stringify({ type: MCSocketEventType.PURCHASE, data: { stuNum, name, count } }));
+        });
+        res.writeHead(200, { 'Content-Type': 'application/json; charset=UTF-8' });
+        res.end(JSON.stringify({}));
+    } else {
+        res.writeHead(404, { 'Content-Type': 'application/json; charset=UTF-8' });
+        res.end(JSON.stringify({ error: '잘못된 요청' }));
+    }
+});
+server.listen(Number(process.env.WS_HTTP_PORT) || 4001, () => {
+    console.log(`Merchant server is running on port ${process.env.WS_HTTP_PORT || 4001}`);
 });

@@ -2,12 +2,14 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from 'next/navigation';
+import { useLocalStorage } from "usehooks-ts";
 
 export default function StoreEntry() {
     const [msg, setMsg] = useState('');
     const [errorCnt, setErrorCnt] = useState(0);
     const [input, setInput] = useState('');
     const [shake, setShake] = useState(false);
+    const [merchantCode, setMerchantCode] = useLocalStorage('merchantCode', '');
     const router = useRouter();
 
     useEffect(() => {
@@ -50,6 +52,11 @@ export default function StoreEntry() {
             window.removeEventListener('keydown', listener);
         };
     }, [input]);
+    useEffect(() => {
+        if (merchantCode.length < 1) {
+            setMerchantCode(prompt('계산대 번호(숫자) 입력') || '');
+        }
+    }, [merchantCode, setMerchantCode]);
 
     return (
         <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center h-dvh p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">

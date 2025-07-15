@@ -29,3 +29,11 @@ export enum SQState {
     ONGOING = 1,
     TIMER_STOPPED = 2
 }
+
+export enum MCSocketEventType {
+    IDENTIFY = 0,
+    UNAUTHORIZED = 1,
+    INVALID_CODE = 2,
+    IDENTIFIED = 3,
+    PURCHASE = 4
+}

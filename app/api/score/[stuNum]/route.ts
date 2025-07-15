@@ -18,9 +18,11 @@ export async function GET(request: Request, { params }: { params: Promise<{ stuN
 
         const existingScore = await collection.findOne({ stuNum });
         if (existingScore) {
+            client.close();
             return NextResponse.json({ score: existingScore.score });
         } else {
             await collection.insertOne({ stuNum, score: 0 });
+            client.close();
             return NextResponse.json({ score: 0 });
         }
     } catch (e) {
@@ -50,9 +52,11 @@ export async function POST(request: Request, { params }: { params: Promise<{ stu
         const existingScore = await collection.findOne({ stuNum });
         if (existingScore) {
             await collection.updateOne({ stuNum }, { $inc: { score: body.score } });
+            client.close();
             return NextResponse.json({});
         } else {
             await collection.insertOne({ stuNum, score: body.score });
+            client.close();
             return NextResponse.json({});
         }
     } catch (e) {

@@ -36,6 +36,7 @@ export async function GET(request: NextRequest) {
                 return null;
             }
         })
+        client.close();
         return new Response(JSON.stringify((await Promise.all(goods)).filter(item => item !== null)));
     } catch (e) { console.log(e) }
 }
