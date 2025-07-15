@@ -58,7 +58,6 @@ export async function POST(request: Request) {
         await scoresCollection.updateOne({ stuNum: body.stuNum }, { $inc: { score: -item.price * body.count } });
         const increase = {};
         Object.defineProperty(increase, body.id, { value: body.count, enumerable: true });
-        console.log(increase)
         await goodsCollection.updateOne({ stuNum: body.stuNum }, { $inc: increase }, { upsert: true });
         client.close();
         await fetch(`http://localhost:${process.env.WS_HTTP_PORT}/purchase?stuNum=${body.stuNum}&name=${item.name}&count=${body.count}&merchant=${body.merchantCode}`, {
