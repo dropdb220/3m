@@ -5,11 +5,10 @@ import { useState, useEffect } from 'react';
 import { MCSocketEventType } from '@/types';
 
 export default function SpeedQuiz() {
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const [PSK, setPSK] = useState('');
     const [wsConnected, setWsConnected] = useState(false);
     const [connected, setConnected] = useState(false);
-    const [transactions, setTransactions] = useState<Array<{ ts: number, stuNum: string, name: string, count: number }>>([]);
+    const [transactions, setTransactions] = useState<Array<{ ts: number, stuNum: string, id: string, name: string, count: number }>>([]);
     const router = useRouter();
 
     useEffect(() => {
@@ -37,7 +36,7 @@ export default function SpeedQuiz() {
                     setConnected(true);
                     break;
                 case MCSocketEventType.PURCHASE:
-                    setTransactions(prev => [...prev, { ts: Date.now(), stuNum: msg.data.stuNum, name: msg.data.name, count: msg.data.count }]);
+                    setTransactions(prev => [...prev, { ts: Date.now(), stuNum: msg.data.stuNum, id: msg.data.id, name: msg.data.name, count: msg.data.count }]);
                     break;
             }
         });
@@ -55,10 +54,29 @@ export default function SpeedQuiz() {
             <div className="fle flex-col items-center justify-center gap-4 w-full h-full p-8">
                 {transactions.slice(0).reverse().slice(0, 10).map((t, idx) => (
                     <div className="flex flex-row items-center justify-between w-full p-4 m-2 bg-gray-100 dark:bg-gray-800 rounded-md" key={idx}>
-                        <div className="flex flex-col">
-                            <div className="font-bold">{t.stuNum} 학생</div>
-                            <span>{t.name} {t.count}개</span>
-                            <span>{new Date(t.ts).toLocaleTimeString('ko-KR', { timeZone: 'Asia/Seoul' })}</span>
+                        <div className="w-full grid grid-cols-[1fr_auto]">
+                            <div className="flex flex-col">
+                                <div className="font-bold">{t.stuNum} 학생</div>
+                                <span>{t.name} {t.count}개</span>
+                                <span>{new Date(t.ts).toLocaleTimeString('ko-KR', { timeZone: 'Asia/Seoul' })}</span>
+                            </div>
+                            <button onClick={() => {
+                                if (!confirm('정말로 취소하시겠습니까?')) return;
+                                fetch('/api/store/buy', {
+                                    method: 'DELETE',
+                                    headers: {
+                                        'Content-Type': 'application/json',
+                                        'Authorization': PSK
+                                    },
+                                    body: JSON.stringify({ stuNum: t.stuNum, id: t.id, count: t.count })
+                                }).then(r => r.json()).then(d => {
+                                    if (d.error) {
+                                        alert(d.error);
+                                    } else {
+                                        setTransactions(prev => prev.filter(x => x.ts !== t.ts));
+                                    }
+                                });
+                            }}>취소하기</button>
                         </div>
                     </div>
                 ))}

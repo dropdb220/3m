@@ -24,6 +24,9 @@ export default function Go() {
             <Link href="/admin/merchant">
                 <div>{'교환처(부원용)'}</div>
             </Link>
+            <Link href="/api/rank">
+                <div>{'순위'}</div>
+            </Link>
         </div>
     )
 }

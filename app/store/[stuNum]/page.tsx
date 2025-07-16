@@ -5,7 +5,7 @@ import { useState, useEffect, use } from 'react';
 import { useRouter } from 'next/navigation';
 import { useLocalStorage } from "usehooks-ts";
 
-function Card(params: { stuNum: string, balance: number, id: string, name: string, max: number, remaining: number, price: number, didUpdate: boolean, setDidUpdate: (didUpdate: boolean) => void }) {
+function Card(params: { stuNum: string, balance: number, id: string, name: string, remaining: number, price: number, didUpdate: boolean, setDidUpdate: (didUpdate: boolean) => void }) {
     const [count, setCount] = useState(0);
     const [displayThis, setDisplayThis] = useState(false);
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -16,9 +16,9 @@ function Card(params: { stuNum: string, balance: number, id: string, name: strin
             <div key={`${params.id}-modal`} className="w-64 aspect-square p-4 bg-white dark:bg-gray-800 rounded-lg shadow-md flex flex-col items-center gap-4" onClick={() => { setDisplayThis(true); setCount(0); }}>
                 <Image src={`/api/store/image/${params.id}`} alt={params.name} width={100} height={100} className="rounded" />
                 <h2 className="text-xl font-semibold">{params.name}</h2>
-                <p>남은 수량: {params.remaining}/{params.max}</p>
+                <p>남은 수량: {params.remaining}개</p>
                 <p>가격: {params.price}점</p>
-                <p>최대 {Math.min(params.remaining, Math.floor(params.balance / params.price))}개 구매 가능</p>
+                <p>현재 최대 {Math.min(params.remaining, Math.floor(params.balance / params.price))}개 구매 가능</p>
             </div>
             <div className={`bg-black opacity-80 fixed top-0 left-0 w-full h-full z-10 ${!displayThis && 'hidden'}`}></div>
             <div className={`bg-[rgb(239,239,240)] dark:bg-[rgb(32,32,32)] fixed top-1/2 left-1/2 -translate-1/2 rounded-lg min-w-42 z-20 text-center ${!displayThis && 'hidden'}`}>
@@ -51,10 +51,10 @@ function Card(params: { stuNum: string, balance: number, id: string, name: strin
                 }}>
                     <div className="p-6">
                         <h1 className="text-black dark:text-white font-bold text-lg mb-2">{params.name}</h1>
-                        <p>남은 수량: {params.remaining}개</p>
+                        <p>구매 가능: {Math.min(params.remaining, Math.floor(params.balance / params.price))}개</p>
                         <p>가격: {params.price}점</p>
                         <input type="number" name="qty" className="w-full p-2 mt-4 h-8 rounded-md border border-black dark:border-white bg-[rgb(239,239,240)] dark:bg-[rgb(32,32,32)] text-black dark:text-white [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none" placeholder="구매할 수량" value={count} onChange={(e) => {
-                            if (Number(e.currentTarget.value) > params.remaining) setCount(params.remaining);
+                            if (Number(e.currentTarget.value) > Math.min(params.remaining, Math.floor(params.balance / params.price))) setCount(Math.min(params.remaining, Math.floor(params.balance / params.price)));
                             else setCount(Number(e.currentTarget.value));
                         }} />
                     </div>
@@ -101,12 +101,18 @@ export default function StoreItems({ params }: { params: Promise<{ stuNum: strin
                 </div>
             </div>
             <div className="w-full text-right p-4">잔액: {balance}점</div>
-            <div className="w-full p-8 flex flex-row items-center justify-center gap-8">
-                {items.map(item => (
-                    <div key={item.id}>
-                        <Card stuNum={params2.stuNum} balance={balance} id={item.id} name={item.name} max={item.max} remaining={item.remaining} price={item.price} didUpdate={didUpdate} setDidUpdate={setDidUpdate} />
+            <div className="w-full p-8 grid gap-8" style={{ gridTemplateColumns: '1fr 1fr 1fr' }}>
+                {items.filter(item => item.remaining > 0).map(item => (
+                    <div key={item.id} style={{ marginLeft: 'auto', marginRight: 'auto' }}>
+                        <Card stuNum={params2.stuNum} balance={balance} id={item.id} name={item.name} remaining={item.remaining} price={item.price} didUpdate={didUpdate} setDidUpdate={setDidUpdate} />
                     </div>
                 ))}
+                {items.filter(items => items.remaining > 0).length === 0 && (
+                    <>
+                        <div />
+                        <h1 className="w-full text-3xl text-center font-bold">구매 가능한 상품 없음</h1>
+                    </>
+                )}
             </div>
         </main>
     )

@@ -202,11 +202,12 @@ const server = http.createServer((req, res) => {
     if (req.url!.startsWith('/purchase')) {
         const data = new URLSearchParams(req.url!.split('?')[1]);
         const stuNum = data.get('stuNum');
+        const id = data.get('id');
         const name = data.get('name');
         const count = Number(data.get('count'));
         const merchantCode = data.get('merchant');
         merchants.filter(m => m.code === merchantCode).forEach(m => {
-            m.socket.send(JSON.stringify({ type: MCSocketEventType.PURCHASE, data: { stuNum, name, count } }));
+            m.socket.send(JSON.stringify({ type: MCSocketEventType.PURCHASE, data: { stuNum, id, name, count } }));
         });
         res.writeHead(200, { 'Content-Type': 'application/json; charset=UTF-8' });
         res.end(JSON.stringify({}));
