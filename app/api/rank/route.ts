@@ -12,7 +12,7 @@ export async function GET() {
 
         const scores = await collection.find({}).toArray();
         client.close();
-        const sortedScores = scores.sort((a, b) => b.score - a.score).slice(0, 5).map(score => {
+        const sortedScores = scores.sort((a, b) => (b.score + (b.spent || 0)) - (a.score + (a.spent || 0))).slice(0, 5).map(score => {
             return {
                 stuNum: score.stuNum,
                 score: score.score + (score.spent || 0)
