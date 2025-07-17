@@ -6,6 +6,7 @@
     "dev": "next dev --turbopack",
     "build": "next build",
     "build:ws": "tsc -t esnext -m nodenext --moduleResolution nodenext --outDir wsdist websocket/*.mts types.ts",
+    "build:ws:win": "tsc -t esnext -m nodenext --moduleResolution nodenext --outDir wsdist websocket\\*.mts types.ts",
     "start": "next start",
     "start:ws": "node wsdist/websocket/index.mjs",
     "lint": "next lint"
