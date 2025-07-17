@@ -15,7 +15,7 @@ export async function GET() {
         const sortedScores = scores.sort((a, b) => b.score - a.score).slice(0, 5).map(score => {
             return {
                 stuNum: score.stuNum,
-                score: score.score
+                score: score.score + (score.spent || 0)
             }
         });
         return NextResponse.json(sortedScores, { headers: { 'Content-Type': 'application/json; charset=UTF-8' } });

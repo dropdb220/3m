@@ -55,7 +55,7 @@ export async function POST(request: Request) {
             return NextResponse.json({ error: '잔액 부족' }, { status: 400, headers: { 'Content-Type': 'application/json; charset=UTF-8' } });
         }
 
-        await scoresCollection.updateOne({ stuNum: body.stuNum }, { $inc: { score: -item.price * body.count } });
+        await scoresCollection.updateOne({ stuNum: body.stuNum }, { $inc: { score: -item.price * body.count, spent: item.price * body.count } }, { upsert: true });
         const increase = {};
         Object.defineProperty(increase, item.category, { value: body.count, enumerable: true });
         await goodsCollection.updateOne({ stuNum: body.stuNum }, { $inc: increase }, { upsert: true });
@@ -124,7 +124,7 @@ export async function DELETE(request: Request) {
 
         await goodsCollection.updateOne({ stuNum: body.stuNum }, { $inc: { [item.category]: -body.count } });
         await goodsCollection.updateOne({ goodId: DBItem.goodId }, { $inc: { totalCnt: -body.count } });
-        await scoresCollection.updateOne({ stuNum: body.stuNum }, { $inc: { score: item.price * Number(body.count) } });
+        await scoresCollection.updateOne({ stuNum: body.stuNum }, { $inc: { score: item.price * Number(body.count), spent: -item.price * Number(body.count) } }, { upsert: true });
         client.close();
         return NextResponse.json({}, { headers: { 'Content-Type': 'application/json; charset=UTF-8' } });
         // eslint-disable-next-line @typescript-eslint/no-unused-vars
